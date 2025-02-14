@@ -6,139 +6,103 @@ import { css, styled } from "@mui/system";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { DemoItem } from "@mui/x-date-pickers/internals/demo";
 import dayjs from "dayjs";
-import PropTypes from "prop-types";
-import React, { FC, ReactElement, forwardRef, useEffect, useState } from "react";
-import { RootActions } from "../redux/actionCreators/actionResultTypes";
-import { AppDispatch, RootState } from "../redux/store/store";
-import { ThunkDispatch } from "redux-thunk";
-import { useDispatch, useSelector } from "react-redux";
-import { ActionType, ICloseAddDiscountModal } from "../redux/actionTypes/discountActionTypes";
+import React from "react";
+import { useAppDispatch } from "../redux/hooks/hooks";
 import { IDiscount } from "../models/discount";
-import { addDiscount } from "../redux/actionCreators/discountActions";
+import { addDiscount, Discount } from "../redux/slices/discountSlice";
 
-
-const today = dayjs();
-const yesterday = dayjs().subtract(1, "day");
+interface AddDiscountModalProps {
+  open: boolean;                  // <-- Parent controls this
+  onClose: () => void;           // <-- Parent callback to close
+  productDiscountDto?: Discount; // Not strictly necessary
+}
 
 export default function AddDiscountModal({
-  productDiscountDto,
-  discountId
-}: {
-  productDiscountDto?: IDiscount;
-  discountId?: number;
-}) {
+  open,
+  onClose,
+  productDiscountDto
+}: AddDiscountModalProps) {
+  const dispatch = useAppDispatch();
 
-  const dispatch = useDispatch<AppDispatch>();
-
-  const isAddDiscountModalOpen: boolean = useSelector(
-    (state: RootState) => state.discount.isAddDiscountModalOpen);
-
-  const isLoading: boolean | null = useSelector(
-    (state: RootState) => state.discount.loading);
-
-  const [discount, setDiscount] = React.useState<IDiscount>({
-    amount: 0.0,
-    endDate: dayjs().toDate(),
-    startDate: dayjs().subtract(1, 'day').toDate(),
+  // Local state for the discount form
+  const [discount, setDiscount] = React.useState<Discount>({
+    id: "temp-id",    // Or generate an ID as needed
+    value: 0
   });
-  const handleCloseModal = () => {
-    dispatch<ICloseAddDiscountModal>({ type: ActionType.CLOSE_ADD_DISCOUNT_MODAL });
+
+  // Called when user clicks "Add"
+  const handleAddDiscount = () => {
+    // Dispatch the addDiscount action from discountSlice
+    dispatch(addDiscount(discount));
+    // Possibly close the modal afterward
+    onClose();
   };
 
-
   return (
-    <div>
-      <Modal
-        aria-labelledby="transition-modal-title"
-        aria-describedby="transition-modal-description"
-        open={isAddDiscountModalOpen}
-        // onClose={handleCloseModal}
-        closeAfterTransition
-      >
+    <Modal
+      aria-labelledby="transition-modal-title"
+      aria-describedby="transition-modal-description"
+      open={open}          // <-- Controlled by parent
+      onClose={onClose}
+      closeAfterTransition
+    >
+      <MUI.Fade in={open}>
+        <ModalContent sx={style}>
+          {/* Header */}
+          <MUI.Stack direction="row" justifyContent="space-between">
+            <MUI.Typography variant="h6">Add Discount</MUI.Typography>
+            <MUI.Button onClick={onClose} sx={{ color: "#000" }}>
+              <CloseIcon />
+            </MUI.Button>
+          </MUI.Stack>
 
+          <MUI.Divider />
 
-        <MUI.Fade in={true}>
-          <ModalContent sx={style}>
-            <MUI.Stack py={0} direction="row" justifyContent="space-between">
-              <MUI.Typography variant="h6" id="transition-modal-title">
-                Add Discount
-              </MUI.Typography>
-              <MUI.Button onClick={handleCloseModal} sx={{ color: "#000" }} >
-                <CloseIcon />
+          {/* Body */}
+          <MUI.Stack gap={2} mt={1}>
+            <MUI.TextField
+              required
+              label="Value"
+              variant="outlined"
+              size="small"
+              value={discount.value}
+              onChange={(event) => 
+                setDiscount((prev) => ({
+                  ...prev,
+                  value: parseFloat(event.target.value) || 0
+                }))
+              }
+            />
+
+            {/* Example date fields, if needed */}
+            {/* 
+              We no longer rely on any 'startDate' / 'endDate' in the slice,
+              because your current discountSlice doesn't define them. 
+              But if you want them, add them to your slice + IDiscount interface.
+            */}
+
+            <MUI.Stack direction="row" spacing={2}>
+              <LoadingButton
+                loading={false /* No loading from slice */}
+                variant="contained"
+                color="primary"
+                onClick={handleAddDiscount}
+              >
+                Add
+              </LoadingButton>
+              <MUI.Button onClick={onClose} variant="outlined" color="error">
+                Cancel
               </MUI.Button>
             </MUI.Stack>
-            <MUI.Divider />
-            <MUI.Stack gap={2}>
-              <MUI.TextField
-                required
-                id="outlined-basic"
-                label="Amount"
-                variant="outlined"
-                size="small"
-                value={discount.amount} onChange={(event: { target: { value: any; }; }) => setDiscount(prevDiscount => ({ ...prevDiscount, amount: event.target.value }))}
-              />
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <MUI.Stack direction="row" gap={1}>
-                  <DatePicker
-                    label="Start Date"
-                    disablePast
-                    views={['year', 'month', 'day']}
-                    value={dayjs(discount.startDate)}
-                    onChange={(newValue) => {
-                      if (newValue) {
-                        setDiscount((prevDiscount) => ({
-                          ...prevDiscount,
-                          startDate: newValue.toDate(),
-                        }));
-                      }
-                    }}
-                  />
-                  <DatePicker
-                    label="End Date"
-                    disablePast
-                    views={['year', 'month', 'day']}
-                    value={dayjs(discount.endDate)}
-                    onChange={(newValue) => {
-                      if (newValue) {
-                        setDiscount((prevDiscount) => ({
-                          ...prevDiscount,
-                          endDate: newValue.toDate(),
-                        }));
-                      }
-                    }}
-                  />
-                </MUI.Stack>
-              </LocalizationProvider>
-
-              <MUI.Stack width="100%" direction="row" gap={2}>
-                <LoadingButton
-                  loading={isLoading}
-                  variant="contained"
-                  color="primary"
-                  onClick={() => { productDiscountDto=discount; dispatch(addDiscount(discount)) }}
-                >
-                  Add
-                </LoadingButton>
-                <MUI.Button
-                  onClick={handleCloseModal}
-                  variant="outlined"
-                  color="error"
-                >
-                  Cancel
-                </MUI.Button>
-              </MUI.Stack>
-            </MUI.Stack>
-          </ModalContent>
-        </MUI.Fade>
-      </Modal>
-    </div>
+          </MUI.Stack>
+        </ModalContent>
+      </MUI.Fade>
+    </Modal>
   );
 }
 
-
-
+// =========== STYLES ===========
 const grey = {
   50: "#F3F6F9",
   100: "#E5EAF2",
@@ -161,14 +125,12 @@ const Modal = styled(BaseModal)`
   justify-content: center;
 `;
 
-
-
 const style = {
   position: "absolute",
   top: "50%",
   left: "50%",
   transform: "translate(-50%, -50%)",
-  minWidth: { xs: 340, md: 400 },
+  minWidth: { xs: 300, md: 400 },
 };
 
 const ModalContent = styled("div")(
@@ -183,24 +145,13 @@ const ModalContent = styled("div")(
     overflow: hidden;
     background-color: ${theme.palette.mode === "dark" ? grey[900] : "#fff"};
     border-radius: 8px;
-    border: 1px solid ${theme.palette.mode === "dark" ? grey[700] : grey[200]};
+    border: 1px solid
+      ${theme.palette.mode === "dark" ? grey[700] : grey[200]};
     box-shadow: 0 4px 12px
-      ${theme.palette.mode === "dark" ? "rgb(0 0 0 / 0.5)" : "rgb(0 0 0 / 0.2)"};
+      ${theme.palette.mode === "dark"
+        ? "rgb(0 0 0 / 0.5)"
+        : "rgb(0 0 0 / 0.2)"};
     padding: 24px;
     color: ${theme.palette.mode === "dark" ? grey[50] : grey[900]};
-
-    & .modal-title {
-      margin: 0;
-      line-height: 1.5rem;
-      margin-bottom: 8px;
-    }
-
-    & .modal-description {
-      margin: 0;
-      line-height: 1.5rem;
-      font-weight: 400;
-      color: ${theme.palette.mode === "dark" ? grey[400] : grey[800]};
-      margin-bottom: 4px;
-    }
   `
 );

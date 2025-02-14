@@ -1,67 +1,45 @@
-import { FC } from "react";
-// import { 
-//     Modal, 
-//     Card, 
-//     CardContent, 
-//     Button,
-//  } from "@mui/material";
-// import { connect } from "react-redux";
+import React, { FC } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { AlertModalToggler } from "../redux/actionCreators/alertActions";
-import { RootState } from '../redux/store/store';
-import { IAlertState as AlertState } from '../redux/reducers/AlertReducer';
-
+import { RootState } from "../redux/store/store";
+import { clearAlert } from "../redux/slices/alertSlice";
+// If you want MUI Modal or Dialog, import them:
+// import { Dialog, DialogTitle, DialogContent, Button } from "@mui/material";
 
 const AlertModal: FC = () => {
-    const alert: AlertState = useSelector(
-        (state: RootState) => state.alert
-      );
-    const dispatch = useDispatch();
-    const hideModal = () => {
-        console.log('hide model fired')
-        dispatch(AlertModalToggler())
-    }
-    return (
-        // contentClassName
-        // <Modal fade={true}  dialogClassName="alert-container" style={{direction:'rtl'}}
-        //     size="sm"
-        //     centered
-        //     isOpen={this.props.isOpen}
-        //     toggle={this.props.modalToggleHandler}
-        // >
-        //     <ModalHeader className ="alert-header" style={{direction:'ltr', height:'25px'}} >
-        //     <span className="alert-header-text">توجه</span>
-        //     </ModalHeader>
-        //     <ModalBody className ="alert-body" style={{ textAlign: "center", paddingTop:'.1em'}}>
-        //         <Card style={{height:'80px', marginTop:'.1em', paddingTop:'.1em'}}>
-        //             <CardBody style={{marginTop:'.1em', paddingTop:'.1em'}}>
-        //                 <span style={{fontWeight:'bold'}}>{this.props.message}</span>
-        //             </CardBody>
-        //         </Card>
-        //     </ModalBody>
-        //     <ModalFooter className="alert-footer">
-        //         <Button size="sm" color="info" onClick={() => this.hideModal()} style={{fontWeight: 'bold'}}>بستن</Button>
-        //     </ModalFooter>
-        // </Modal>
-        <></>
-    )
-}
-// Customizing the Modal:
-// Making the modal match your brand and design is simple. 
-// Use the same methods available for any react component to style a modal, including any CSS-in-js solution, 
-// standard CSS, and CSS Modules. If you need to add a class to the modal dialog, use the dialogClassName property.
+  // Pull the current alert state
+  const alert = useSelector((state: RootState) => state.alert);
+  const dispatch = useDispatch();
 
-// const mapStateToProps = state => {
-//     return {
-//       isOpen: state.alert.isModalOpen,
-//       message: state.alert.message,
-//     };
-//   };
-  
-//   const mapDispatchToProps = dispatch => {
-//     return {
-//       modalToggleHandler: () => dispatch(AlertModalToggler()),
-//     };
-//   };
-  
+  // Hide or close the modal by clearing the alert
+  const hideModal = () => {
+    dispatch(clearAlert());
+  };
+
+  // If there's no message, don't render anything
+  if (!alert.message) {
+    return null;
+  }
+
+  // Alternatively, use MUI's <Dialog> or <Modal>.
+  // This is a minimal placeholder to show the concept:
+  return (
+    <div
+      style={{
+        position: "fixed",
+        top: "30%",
+        left: "50%",
+        transform: "translateX(-50%)",
+        backgroundColor: "#fff",
+        border: "1px solid #ccc",
+        padding: "1rem",
+        zIndex: 9999
+      }}
+    >
+      <h3>Alert ({alert.type || "info"})</h3>
+      <p>{alert.message}</p>
+      <button onClick={hideModal}>Close</button>
+    </div>
+  );
+};
+
 export default AlertModal;
