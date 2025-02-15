@@ -7,4 +7,9 @@ import { UserService } from './user.service';
   providers: [UserService],
   exports: [UserService],  // so AuthService can inject it
 })
-export class UserModule {}
+export class UserModule {
+  id: number;
+  name: string;
+  email: string;
+  password: string;
+}
